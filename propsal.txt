@@ -1,0 +1,107 @@
+Project Proposal
+MiniKernel-Sec: A Minimalist Kernel with Built-in Integrity
+Monitoring
+1. Introduction & Problem Statement
+Operating Systems form the backbone of all computing systems, yet students often
+find it difficult to understand their internal operations due to:
+• Abstract theoretical concepts — process scheduling, memory management, and
+interrupts remain hard to visualize.
+• High complexity — production kernels like Linux or Windows contain millions
+of lines of code.
+• Limited hands-on experience — students rarely explore how bootloaders,
+interrupt handlers, and kernel memory allocation actually work.
+In parallel, modern operating systems face security threats from kernel-mode
+rootkits, which can hide within the OS by modifying critical structures like the
+Interrupt Descriptor Table (IDT) or System Service Dispatch Table (SSDT).
+Understanding and defending against such attacks is vital, yet nearly impossible
+without a simplified, transparent kernel for experimentation.
+2. Proposed Solution
+We propose MiniKernel-Sec, a minimal, educational kernel that demonstrates
+essential OS concepts and integrates a built-in Kernel Integrity Module (KIM) to
+detect tampering attempts. This project combines operating system fundamentals
+with system-level security, giving students hands-on experience in both.
+3. Project Phases
+Phase 1 – Foundational Kernel Development (“MiniKernel Core”)
+Develop a small, bootable kernel in C and Assembly with these core features:
+- Bootloader: Custom boot sector to load kernel into memory and switch CPU to 32-
+bit protected mode.
+- Kernel Initialization: Setup of the Global Descriptor Table (GDT) and Interrupt
+Descriptor Table (IDT).
+- Device Drivers: VGA text display driver and Programmable Interval Timer (PIT)
+driver.- Interrupt Handling: Centralized interrupt management via IDT entries.
+- Memory Management: Simple heap allocator supporting malloc()/free().
+- Command Shell: Minimal shell interface for executing kernel commands.
+All components will be tested in QEMU for safety and reproducibility.
+Phase 2 – Security Hardening (“Rootkit Detector” Module)
+Implement the Kernel Integrity Module (KIM) inspired by real-world Cross-View
+Validation (CVV) techniques.
+Features:
+- IDT Integrity Verification: Scans all IDT entries and ensures handler addresses
+remain within the legitimate kernel address range.
+- Kernel Function Integrity Check: Detects inline hooking by computing a hash
+(e.g., CRC32) of the initial bytes of critical functions.
+- Mock Attack Module & Live Detection: Controlled demonstration that simulates a
+rootkit attack, with the KIM detecting the modification.
+4. Course Topics Integrated
+Course Topic (CCS3712)Implementation in MiniKernel-Sec
+Boot Process & InitializationCustom bootloader, protected mode
+setup, GDT/IDT initialization
+Memory Management
+Heap allocator with malloc/free and
+segmentation
+System Security & Integrity
+Real-time IDT and code integrity
+verification using KIM
+5. Team Roles
+MemberResponsibility
+ABootloader & Protected Mode Setup
+BMemory Manager & Shell
+Implementation
+C
+Kernel Integrity Module (IDT +
+Function Check)
+D
+Documentation & Testing (Mock AttackDemo)
+6. Tentative Timeline
+WeekTask / Milestone
+Week 1–2Bootloader, GDT/IDT setup, VGA driver
+Week 3Memory allocator and shell interface
+Week 4Implementation of IDT integrity
+checker
+Week 5
+Function checksum verification and
+KIM integration
+Week 6
+Mock attack module, testing, and final
+report preparation
+7. Expected Outcomes
+1. A functional, bootable mini-kernel that demonstrates OS internals.
+2. A built-in module that can detect simulated kernel tampering.
+3. Practical experience in systems programming using C and x86 assembly.
+4. A deeper understanding of how real rootkits operate and how OS kernels can
+defend themselves.
+5. A complete demonstration with source code, technical documentation, and live
+testing on QEMU.
+8. Deliverables
+1. Bootable kernel image (MiniKernelSec.bin).
+2. Source code with clear documentation and comments.
+3. Technical report explaining each OS and security component.
+4. Live demo showing a mock rootkit attack and its detection.
+9. Risk Management
+RiskMitigation
+Assembly debugging errorsUse QEMU + GDB for step-by-step
+tracing
+Limited hardware access
+Run entirely on virtualizedenvironment
+Time constraints
+Divide tasks by phase and parallelize
+development
+Kernel instability
+Maintain frequent checkpoints and
+use small test modules
+10. Conclusion
+MiniKernel-Sec will serve as both a learning platform and a research prototype,
+demonstrating how a kernel can monitor its own integrity. By merging
+educational clarity with security innovation, this project aims to give students
+practical, low-level insights into OS architecture and defense mechanisms —
+bridging the gap between classroom theory and real-world system design.
