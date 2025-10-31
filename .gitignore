@@ -1,0 +1,22 @@
+# Build artifacts
+*.bin
+*.elf
+*.o
+*.img
+
+# Specific build outputs
+boot.bin
+kernel.bin
+kernel.elf
+MiniKernelSec.bin
+
+# Editor/IDE files
+.vscode/
+.idea/
+*.swp
+*.swo
+*~
+
+# OS generated files
+.DS_Store
+Thumbs.db
