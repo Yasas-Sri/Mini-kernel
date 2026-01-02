@@ -2,6 +2,8 @@
 #include "../drivers/vga.h"
 #include "../drivers/keyboard.h"
 #include "memory.h"
+#include "kim.h"
+#include "rootkit.h"
 #include <stdint.h>
 
 #define MAX_INPUT 256
@@ -40,9 +42,7 @@ void shell_init()
 {
     vga_write_string("\n");
     vga_set_color(VGA_COLOR_LIGHT_CYAN, VGA_COLOR_BLACK);
-    vga_write_string("========================================\n");
     vga_write_string("   MiniKernel-Sec Shell v0.1\n");
-    vga_write_string("========================================\n\n");
     vga_set_color(VGA_COLOR_LIGHT_GREY, VGA_COLOR_BLACK);
     vga_write_string("Type 'help' for available commands\n\n");
 }
@@ -59,11 +59,18 @@ static void execute_command(const char *cmd)
     if (strcmp(cmd, "help") == 0)
     {
         vga_write_string("\nAvailable commands:\n");
-        vga_write_string("  help     - Show this help message\n");
-        vga_write_string("  clear    - Clear the screen\n");
-        vga_write_string("  meminfo  - Display memory information\n");
-        vga_write_string("  about    - Show kernel information\n");
-        vga_write_string("  test     - Test memory allocator\n");
+        vga_write_string("  help      - Show this help message\n");
+        vga_write_string("  clear     - Clear the screen\n");
+        vga_write_string("  meminfo   - Display memory information\n");
+        vga_write_string("  about     - Show kernel information\n");
+        vga_write_string("  test      - Test memory allocator\n");
+        vga_write_string("  idtcheck  - Check IDT integrity\n");
+        vga_write_string("  idtinfo   - Display IDT information\n");
+        vga_write_string("  funccheck - Check function integrity (CRC32)\n");
+        vga_write_string("  attack    - Simulate rootkit IDT hook attack\n");
+        vga_write_string("  unhook    - Remove rootkit IDT hook\n");
+        vga_write_string("  patch     - Simulate inline hook (function patching)\n");
+        vga_write_string("  unpatch   - Remove inline hook\n");
         vga_write_string("\n");
     }
     else if (strcmp(cmd, "clear") == 0)
@@ -103,6 +110,34 @@ static void execute_command(const char *cmd)
         kfree(ptr3);
         vga_write_string("[+] All memory freed\n");
         vga_write_string("[+] Memory allocator test complete!\n\n");
+    }
+    else if (strcmp(cmd, "idtcheck") == 0)
+    {
+        kim_check_idt();
+    }
+    else if (strcmp(cmd, "idtinfo") == 0)
+    {
+        kim_display_idt_info();
+    }
+    else if (strcmp(cmd, "funccheck") == 0)
+    {
+        kim_check_functions();
+    }
+    else if (strcmp(cmd, "attack") == 0)
+    {
+        rootkit_hook_keyboard();
+    }
+    else if (strcmp(cmd, "unhook") == 0)
+    {
+        rootkit_unhook();
+    }
+    else if (strcmp(cmd, "patch") == 0)
+    {
+        rootkit_patch_function();
+    }
+    else if (strcmp(cmd, "unpatch") == 0)
+    {
+        rootkit_unpatch_function();
     }
     else if (strlen(cmd) > 0)
     {

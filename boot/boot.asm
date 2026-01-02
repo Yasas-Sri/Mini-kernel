@@ -11,6 +11,9 @@ start:
     mov sp, 0x7C00
     sti
 
+    ; Force boot drive to 0 (Floppy) for now
+    mov byte [boot_drive], 0
+
     ; Print boot message
     mov si, boot_msg
     call print_string
@@ -18,7 +21,7 @@ start:
     ; Load kernel from disk
     ; Reset disk
     mov ah, 0x00
-    mov dl, 0x80
+    mov dl, [boot_drive]
     int 0x13
 
     ; Read kernel sectors
@@ -27,11 +30,11 @@ start:
     xor bx, bx              ; Offset 0 (so address is 0x1000:0x0000 = 0x10000)
     
     mov ah, 0x02            ; Read sectors function
-    mov al, 30              ; Number of sectors to read (increase if kernel is larger)
+    mov al, 40              ; Read 40 sectors (20KB)
     mov ch, 0               ; Cylinder 0
     mov cl, 2               ; Start from sector 2 (sector 1 is boot sector)
     mov dh, 0               ; Head 0
-    mov dl, 0x80            ; Drive 0
+    mov dl, [boot_drive]    ; Drive number
     int 0x13
     jc disk_error
 
@@ -82,6 +85,7 @@ print_string:
 boot_msg db 'MiniKernel-Sec Bootloader v0.1', 13, 10, 0
 load_success db 'Kernel loaded successfully!', 13, 10, 0
 disk_error_msg db 'ERROR: Disk read failed!', 13, 10, 0
+boot_drive db 0
 
 ; GDT Setup
 align 4
@@ -123,7 +127,7 @@ protected_mode:
     mov esp, 0x90000
 
     ; Jump to kernel at 0x10000
-    call 0x10000
+    jmp 0x10000
 
     ; Should never reach here
     hlt
