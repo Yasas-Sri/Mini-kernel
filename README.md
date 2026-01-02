@@ -191,25 +191,5 @@ Maximum: 20KB (40 sectors) before bootloader update needed
 - Advanced memory protection (paging)
 - Real-time rootkit detection daemon
 
-## Educational Purpose
 
-This kernel demonstrates:
-- Low-level x86 programming
-- Bootloader development
-- Interrupt handling
-- Protected mode setup
-- Rootkit detection techniques
-- Security baseline systems
 
-**Not suitable for production use.**
-
-## License
-
-Educational project - use for learning purposes.
-
-## References
-
-- Intel 64 and IA-32 Architectures Software Developer's Manual
-- OSDev Wiki: https://wiki.osdev.org/
-- Linux Kernel source (for concepts)
-- Rootkit detection research papers
