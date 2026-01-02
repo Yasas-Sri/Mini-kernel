@@ -3,7 +3,7 @@
 static uint16_t *vga_buffer = (uint16_t *)VGA_MEMORY;
 static uint8_t vga_cursor_x = 0;
 static uint8_t vga_cursor_y = 0;
-static uint8_t vga_color_code = 0x0F; // White on black
+static uint8_t vga_color_code = 0x0F; 
 
 static inline uint8_t vga_entry_color(uint8_t fg, uint8_t bg)
 {
@@ -37,7 +37,7 @@ void vga_clear()
 
 void vga_scroll()
 {
-    // Move all lines up
+   
     for (int y = 0; y < VGA_HEIGHT - 1; y++)
     {
         for (int x = 0; x < VGA_WIDTH; x++)
@@ -46,7 +46,7 @@ void vga_scroll()
         }
     }
 
-    // Clear last line
+    
     for (int x = 0; x < VGA_WIDTH; x++)
     {
         vga_buffer[(VGA_HEIGHT - 1) * VGA_WIDTH + x] = vga_entry(' ', vga_color_code);
@@ -69,6 +69,15 @@ void vga_putchar(char c)
     else if (c == '\t')
     {
         vga_cursor_x = (vga_cursor_x + 4) & ~(4 - 1);
+    }
+    else if (c == '\b')
+    {
+        if (vga_cursor_x > 0)
+        {
+            vga_cursor_x--;
+            const int index = vga_cursor_y * VGA_WIDTH + vga_cursor_x;
+            vga_buffer[index] = vga_entry(' ', vga_color_code);
+        }
     }
     else
     {

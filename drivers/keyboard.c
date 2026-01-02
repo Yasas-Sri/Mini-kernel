@@ -1,7 +1,12 @@
 #include "keyboard.h"
 #include "vga.h"
 
-// Helper function to read from I/O port
+
+static char keyboard_buffer[KEYBOARD_BUFFER_SIZE];
+static volatile int buffer_read_pos = 0;
+static volatile int buffer_write_pos = 0;
+
+
 static inline uint8_t __inb(uint16_t port)
 {
     uint8_t ret;
@@ -18,36 +23,46 @@ static const char scancode_to_ascii[] = {
 
 void keyboard_init()
 {
-    vga_write_string("[*] Initializing Keyboard Driver...\n");
-    // Keyboard initialization will be done via IDT
+    vga_write_string("[*] Initializing Keyboard Driver (Interrupt Mode)...\n");
+    buffer_read_pos = 0;
+    buffer_write_pos = 0;
     vga_write_string("[+] Keyboard initialized\n");
 }
 
-char keyboard_getchar()
+void keyboard_handler()
 {
-    uint8_t status;
-    uint8_t scancode;
-
-    // Wait for keyboard data
-    while (1)
+    uint8_t scancode = __inb(KEYBOARD_DATA_PORT);
+    
+    
+    if (scancode < 128)
     {
-        status = __inb(KEYBOARD_STATUS_PORT);
-        if (status & 0x01)
+        if (scancode < sizeof(scancode_to_ascii))
         {
-            scancode = __inb(KEYBOARD_DATA_PORT);
-
-            // Only handle key press (not release)
-            if (scancode < 128)
+            char c = scancode_to_ascii[scancode];
+            if (c != 0)
             {
-                if (scancode < sizeof(scancode_to_ascii))
+                
+                int next_pos = (buffer_write_pos + 1) % KEYBOARD_BUFFER_SIZE;
+                if (next_pos != buffer_read_pos)
                 {
-                    char c = scancode_to_ascii[scancode];
-                    if (c != 0)
-                    {
-                        return c;
-                    }
+                    keyboard_buffer[buffer_write_pos] = c;
+                    buffer_write_pos = next_pos;
                 }
             }
         }
     }
+}
+
+char keyboard_getchar()
+{
+   
+    while (buffer_read_pos == buffer_write_pos)
+    {
+        
+        __asm__ volatile("hlt");
+    }
+    
+    char c = keyboard_buffer[buffer_read_pos];
+    buffer_read_pos = (buffer_read_pos + 1) % KEYBOARD_BUFFER_SIZE;
+    return c;
 }
