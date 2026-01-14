@@ -10,6 +10,8 @@
 #include "syscall.h"
 #include "process.h"
 #include "vfs.h"
+#include "sysinfo.h"
+#include "pci.h"
 
 void kernel_main()
 {
@@ -73,6 +75,19 @@ void kernel_main()
     vga_write_string("[+] VFS initialized\n");
     vfs_load_config();
     vga_write_string("\n");
+
+    // Initialize system information
+    vga_set_color(VGA_COLOR_LIGHT_GREY, VGA_COLOR_BLACK);
+    vga_write_string("[*] Gathering system information...\n");
+    sysinfo_init();
+    vga_set_color(VGA_COLOR_LIGHT_GREEN, VGA_COLOR_BLACK);
+    vga_write_string("[+] System information initialized\n\n");
+
+    // Initialize PCI
+    vga_set_color(VGA_COLOR_LIGHT_GREY, VGA_COLOR_BLACK);
+    pci_init();
+    vga_set_color(VGA_COLOR_LIGHT_GREEN, VGA_COLOR_BLACK);
+    vga_write_string("[+] PCI initialized\n\n");
 
    
     vga_set_color(VGA_COLOR_LIGHT_GREY, VGA_COLOR_BLACK);
