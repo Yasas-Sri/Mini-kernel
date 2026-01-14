@@ -12,6 +12,7 @@
 #include "vfs.h"
 #include "sysinfo.h"
 #include "pci.h"
+#include "rootkit_detect.h"
 
 void kernel_main()
 {
@@ -88,6 +89,13 @@ void kernel_main()
     pci_init();
     vga_set_color(VGA_COLOR_LIGHT_GREEN, VGA_COLOR_BLACK);
     vga_write_string("[+] PCI initialized\n\n");
+
+    // Initialize rootkit detection (capture baseline state)
+    vga_set_color(VGA_COLOR_LIGHT_GREY, VGA_COLOR_BLACK);
+    vga_write_string("[*] Initializing rootkit detection...\n");
+    rootkit_detect_init();
+    vga_set_color(VGA_COLOR_LIGHT_GREEN, VGA_COLOR_BLACK);
+    vga_write_string("[+] Rootkit detection baseline established\n\n");
 
    
     vga_set_color(VGA_COLOR_LIGHT_GREY, VGA_COLOR_BLACK);

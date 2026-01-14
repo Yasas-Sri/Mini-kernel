@@ -47,6 +47,7 @@ void process_exit(int status);
 int process_fork();
 void process_yield();
 void process_kill(uint32_t pid);
+void process_cleanup_all();  // Mark all remaining processes as terminated
 
 // Scheduler functions
 void scheduler_init();

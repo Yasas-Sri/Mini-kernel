@@ -35,5 +35,11 @@ void run_processes() {
     context_switch(&shell_context, &current_process->context);
     
     // We return here when all processes are done!
+    // Clear current_process since we're back in shell
+    current_process = NULL;
+    
+    // Mark any remaining processes as terminated
+    process_cleanup_all();
+    
     vga_write_string("\n[SCHEDULER] Returned to shell\n");
 }
