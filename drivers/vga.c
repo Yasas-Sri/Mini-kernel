@@ -140,6 +140,27 @@ void vga_write_dec(int num)
     }
 }
 
+void vga_write_hex(uint32_t num)
+{
+    char hex_chars[] = "0123456789ABCDEF";
+    char buffer[8];
+    
+    for (int i = 7; i >= 0; i--) {
+        buffer[i] = hex_chars[num & 0xF];
+        num >>= 4;
+    }
+    
+    // Skip leading zeros
+    int start = 0;
+    while (start < 7 && buffer[start] == '0') {
+        start++;
+    }
+    
+    for (int i = start; i < 8; i++) {
+        vga_putchar(buffer[i]);
+    }
+}
+
 void vga_apply_dark_theme()
 {
     current_theme = 0;

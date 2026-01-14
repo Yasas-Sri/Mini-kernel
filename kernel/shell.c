@@ -6,6 +6,9 @@
 #include "rootkit.h"
 #include "process.h"
 #include "vfs.h"
+#include "sysinfo.h"
+#include "cpu_info.h"
+#include "pci.h"
 #include <stdint.h>
 
 #define MAX_INPUT 256
@@ -79,6 +82,8 @@ static void execute_command(const char *cmd)
         vga_write_string("\nAvailable commands:\n");
         vga_write_string("  help      - Show this help message\n");
         vga_write_string("  clear     - Clear the screen\n");
+        vga_write_string("  sysinfo   - Display system and CPU information\n");
+        vga_write_string("  pci       - Scan and display PCI devices\n");
         vga_write_string("  meminfo   - Display memory information\n");
         vga_write_string("  about     - Show kernel information\n");
         vga_write_string("  test      - Test memory allocator\n");
@@ -103,6 +108,16 @@ static void execute_command(const char *cmd)
     else if (strcmp(cmd, "clear") == 0)
     {
         vga_clear();
+    }
+    else if (strcmp(cmd, "sysinfo") == 0)
+    {
+        vga_write_string("\n");
+        sysinfo_display();
+    }
+    else if (strcmp(cmd, "pci") == 0)
+    {
+        pci_print_devices();
+        vga_write_string("\n");
     }
     else if (strcmp(cmd, "meminfo") == 0)
     {

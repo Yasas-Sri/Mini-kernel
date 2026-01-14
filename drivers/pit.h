@@ -5,7 +5,7 @@
 
 #define PIT_CHANNEL0 0x40
 #define PIT_COMMAND 0x43
-#define PIT_FREQUENCY 1193182
+#define PIT_BASE_FREQUENCY 1193182
 
 void pit_init(uint32_t frequency);
 void pit_handler();
