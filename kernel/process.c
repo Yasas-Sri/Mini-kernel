@@ -55,7 +55,16 @@ void scheduler_init() {
 // Find free slot in process table
 static process_t* get_free_process_slot() {
     for (int i = 0; i < MAX_PROCESSES; i++) {
-        if (process_table[i].state == PROCESS_TERMINATED && process_table[i].pid == 0) {
+        // First try to find completely unused slots (pid == 0)
+        if (process_table[i].pid == 0) {
+            return &process_table[i];
+        }
+    }
+    // If no unused slots, reuse terminated processes
+    for (int i = 0; i < MAX_PROCESSES; i++) {
+        if (process_table[i].state == PROCESS_TERMINATED) {
+            // Clear the slot for reuse
+            process_table[i].pid = 0;
             return &process_table[i];
         }
     }
@@ -261,9 +270,11 @@ void process_exit(int status) {
         kfree(current_process->stack);
     }
     
-    // Mark as terminated
+    // Mark as terminated (keep PID so ps can still see it)
     current_process->state = PROCESS_TERMINATED;
-    current_process->pid = 0;
+    current_process->time_slice = 0;  // Clear time slice for terminated process
+    // Don't clear PID here - keep it for ps to display
+    // current_process->pid = 0;  // Commented out so terminated processes are visible
     process_count_var--;
     
     // Remove from queue
@@ -321,6 +332,16 @@ void process_kill(uint32_t pid) {
     if (current_process == proc) {
         current_process = NULL;
         scheduler_schedule();
+    }
+}
+
+// Cleanup all remaining processes (called when returning to shell)
+void process_cleanup_all() {
+    for (int i = 0; i < MAX_PROCESSES; i++) {
+        if (process_table[i].pid != 0 && process_table[i].state != PROCESS_TERMINATED) {
+            process_table[i].state = PROCESS_TERMINATED;
+            process_table[i].time_slice = 0;
+        }
     }
 }
 
@@ -429,18 +450,48 @@ void process_list_all() {
         }
     }
     
-    vga_write_string("\nTotal processes: ");
+    // Count active processes
+    uint32_t active = 0;
+    uint32_t total = 0;
+    for (int i = 0; i < MAX_PROCESSES; i++) {
+        if (process_table[i].pid != 0) {
+            total++;
+            if (process_table[i].state != PROCESS_TERMINATED) {
+                active++;
+            }
+        }
+    }
+    
+    vga_write_string("\nActive processes: ");
     char count_str[12];
     int idx = 0;
-    uint32_t count = process_count_var;
-    if (count == 0) {
+    if (active == 0) {
         count_str[idx++] = '0';
     } else {
         char temp[12];
         int j = 0;
+        uint32_t count = active;
         while (count > 0) {
             temp[j++] = '0' + (count % 10);
             count /= 10;
+        }
+        while (j > 0) {
+            count_str[idx++] = temp[--j];
+        }
+    }
+    count_str[idx] = '\0';
+    vga_write_string(count_str);
+    
+    vga_write_string(" / Total in table: ");
+    idx = 0;
+    if (total == 0) {
+        count_str[idx++] = '0';
+    } else {
+        char temp[12];
+        int j = 0;
+        while (total > 0) {
+            temp[j++] = '0' + (total % 10);
+            total /= 10;
         }
         while (j > 0) {
             count_str[idx++] = temp[--j];

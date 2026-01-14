@@ -9,6 +9,7 @@
 #include "sysinfo.h"
 #include "cpu_info.h"
 #include "pci.h"
+#include "rootkit_detect.h"
 #include <stdint.h>
 
 #define MAX_INPUT 256
@@ -99,6 +100,7 @@ static void execute_command(const char *cmd)
         vga_write_string("  idtcheck  - Check IDT integrity\n");
         vga_write_string("  idtinfo   - Display IDT information\n");
         vga_write_string("  funccheck - Check function integrity (CRC32)\n");
+        vga_write_string("  detect    - Run full rootkit detection scan\n");
         vga_write_string("  attack    - Simulate rootkit IDT hook attack\n");
         vga_write_string("  unhook    - Remove rootkit IDT hook\n");
         vga_write_string("  patch     - Simulate inline hook (function patching)\n");
@@ -113,6 +115,11 @@ static void execute_command(const char *cmd)
     {
         vga_write_string("\n");
         sysinfo_display();
+    }
+    else if (strcmp(cmd, "detect") == 0)
+    {
+        rootkit_detect_scan();
+        rootkit_detect_display_report();
     }
     else if (strcmp(cmd, "pci") == 0)
     {
