@@ -9,6 +9,7 @@
 #include "kim.h"
 #include "syscall.h"
 #include "process.h"
+#include "vfs.h"
 
 void kernel_main()
 {
@@ -63,6 +64,15 @@ void kernel_main()
     memory_init();
     vga_set_color(VGA_COLOR_LIGHT_GREEN, VGA_COLOR_BLACK);
     vga_write_string("[+] Memory manager initialized\n\n");
+
+    // Initialize VFS and RAM disk
+    vga_set_color(VGA_COLOR_LIGHT_GREY, VGA_COLOR_BLACK);
+    vga_write_string("[*] Initializing Virtual File System...\n");
+    vfs_init();
+    vga_set_color(VGA_COLOR_LIGHT_GREEN, VGA_COLOR_BLACK);
+    vga_write_string("[+] VFS initialized\n");
+    vfs_load_config();
+    vga_write_string("\n");
 
    
     vga_set_color(VGA_COLOR_LIGHT_GREY, VGA_COLOR_BLACK);

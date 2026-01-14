@@ -32,5 +32,9 @@ void vga_clear();
 void vga_putchar(char c);
 void vga_write_string(const char *str);
 void vga_set_color(uint8_t fg, uint8_t bg);
+void vga_write_dec(int num);
+void vga_apply_dark_theme();
+void vga_apply_light_theme();
+void vga_get_theme_colors(uint8_t *fg, uint8_t *bg);
 
 #endif

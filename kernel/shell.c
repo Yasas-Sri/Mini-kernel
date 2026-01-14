@@ -5,6 +5,7 @@
 #include "kim.h"
 #include "rootkit.h"
 #include "process.h"
+#include "vfs.h"
 #include <stdint.h>
 
 #define MAX_INPUT 256
@@ -39,6 +40,16 @@ static int strlen(const char *str)
     return len;
 }
 
+// String compare with length limit
+static int strncmp(const char *s1, const char *s2, int n)
+{
+    for (int i = 0; i < n; i++) {
+        if (s1[i] != s2[i] || s1[i] == '\0' || s2[i] == '\0')
+            return s1[i] - s2[i];
+    }
+    return 0;
+}
+
 void shell_init()
 {
     vga_write_string("\n");
@@ -50,9 +61,15 @@ void shell_init()
 
 static void print_prompt()
 {
-    vga_set_color(VGA_COLOR_LIGHT_GREEN, VGA_COLOR_BLACK);
+    // Get current theme colors
+    uint8_t fg, bg;
+    extern void vga_get_theme_colors(uint8_t *fg, uint8_t *bg);
+    vga_get_theme_colors(&fg, &bg);
+    
+    // Use green for prompt, but keep current background
+    vga_set_color(VGA_COLOR_LIGHT_GREEN, bg);
     vga_write_string("kernel> ");
-    vga_set_color(VGA_COLOR_LIGHT_GREY, VGA_COLOR_BLACK);
+    vga_set_color(fg, bg);
 }
 
 static void execute_command(const char *cmd)
@@ -68,6 +85,12 @@ static void execute_command(const char *cmd)
         vga_write_string("  syscall   - Test system call interface\n");
         vga_write_string("  ps        - List all processes\n");
         vga_write_string("  demo      - Run multitasking demo\n");
+        vga_write_string("  ls        - List files in RAM disk\n");
+        vga_write_string("  cat       - Read and display a file\n");
+        vga_write_string("  write     - Write to a file\n");
+        vga_write_string("  touch     - Create a new file\n");
+        vga_write_string("  rm        - Delete a file\n");
+        vga_write_string("  theme     - Set theme (dark/light)\n");
         vga_write_string("  idtcheck  - Check IDT integrity\n");
         vga_write_string("  idtinfo   - Display IDT information\n");
         vga_write_string("  funccheck - Check function integrity (CRC32)\n");
@@ -249,6 +272,120 @@ static void execute_command(const char *cmd)
     else if (strcmp(cmd, "unpatch") == 0)
     {
         rootkit_unpatch_function();
+    }
+    else if (strcmp(cmd, "ls") == 0)
+    {
+        vfs_list_files();
+    }
+    else if (strncmp(cmd, "cat ", 4) == 0)
+    {
+        const char *filename = cmd + 4;
+        char buffer[256];
+        int bytes = vfs_read_file(filename, buffer, 255);
+        if (bytes > 0) {
+            buffer[bytes] = '\0';
+            vga_write_string("\nFile: ");
+            vga_write_string(filename);
+            vga_write_string("\n");
+            vga_write_string(buffer);
+            vga_write_string("\n\n");
+        } else {
+            vga_set_color(VGA_COLOR_LIGHT_RED, VGA_COLOR_BLACK);
+            vga_write_string("\n[!] File not found: ");
+            vga_write_string(filename);
+            vga_write_string("\n\n");
+            vga_set_color(VGA_COLOR_LIGHT_GREY, VGA_COLOR_BLACK);
+        }
+    }
+    else if (strncmp(cmd, "write ", 6) == 0)
+    {
+        // Parse: echo filename data (data can have spaces)
+        const char *rest = cmd + 5;
+        
+        // Skip leading spaces
+        while (*rest == ' ') rest++;
+        
+        // Extract filename (until first space)
+        char filename[32];
+        int i = 0;
+        while (rest[i] != ' ' && rest[i] != '\0' && i < 31) {
+            filename[i] = rest[i];
+            i++;
+        }
+        filename[i] = '\0';
+        
+        if (rest[i] == ' ') {
+            // Skip spaces between filename and data
+            const char *data = rest + i;
+            while (*data == ' ') data++;
+            
+            if (*data != '\0') {
+                if (vfs_write_file(filename, data) >= 0) {
+                    vga_set_color(VGA_COLOR_LIGHT_GREEN, VGA_COLOR_BLACK);
+                    vga_write_string("\n[+] Written to ");
+                    vga_write_string(filename);
+                    vga_write_string("\n\n");
+                    vga_set_color(VGA_COLOR_LIGHT_GREY, VGA_COLOR_BLACK);
+                } else {
+                    vga_set_color(VGA_COLOR_LIGHT_RED, VGA_COLOR_BLACK);
+                    vga_write_string("\n[!] Failed to write to file\n\n");
+                    vga_set_color(VGA_COLOR_LIGHT_GREY, VGA_COLOR_BLACK);
+                }
+            } else {
+                vga_write_string("\nUsage: echo filename data\n\n");
+            }
+        } else {
+            vga_write_string("\nUsage: echo filename data\n\n");
+        }
+    }
+    else if (strncmp(cmd, "touch ", 6) == 0)
+    {
+        const char *filename = cmd + 6;
+        if (vfs_create_file(filename) == 0) {
+            vga_set_color(VGA_COLOR_LIGHT_GREEN, VGA_COLOR_BLACK);
+            vga_write_string("\n[+] Created file: ");
+            vga_write_string(filename);
+            vga_write_string("\n\n");
+            vga_set_color(VGA_COLOR_LIGHT_GREY, VGA_COLOR_BLACK);
+        } else {
+            vga_set_color(VGA_COLOR_LIGHT_RED, VGA_COLOR_BLACK);
+            vga_write_string("\n[!] Failed to create file (may already exist or disk full)\n\n");
+            vga_set_color(VGA_COLOR_LIGHT_GREY, VGA_COLOR_BLACK);
+        }
+    }
+    else if (strncmp(cmd, "rm ", 3) == 0)
+    {
+        const char *filename = cmd + 3;
+        if (vfs_delete_file(filename) == 0) {
+            vga_set_color(VGA_COLOR_LIGHT_GREEN, VGA_COLOR_BLACK);
+            vga_write_string("\n[+] Deleted file: ");
+            vga_write_string(filename);
+            vga_write_string("\n\n");
+            vga_set_color(VGA_COLOR_LIGHT_GREY, VGA_COLOR_BLACK);
+        } else {
+            vga_set_color(VGA_COLOR_LIGHT_RED, VGA_COLOR_BLACK);
+            vga_write_string("\n[!] File not found: ");
+            vga_write_string(filename);
+            vga_write_string("\n\n");
+            vga_set_color(VGA_COLOR_LIGHT_GREY, VGA_COLOR_BLACK);
+        }
+    }
+    else if (strncmp(cmd, "theme ", 6) == 0)
+    {
+        const char *theme = cmd + 6;
+        if (strcmp(theme, "dark") == 0) {
+            vga_apply_dark_theme();
+            vga_write_string("\n[+] Dark theme applied\n\n");
+            // Update config file
+            vfs_write_file("os.conf", "theme=dark;user=admin;");
+        } else if (strcmp(theme, "light") == 0) {
+            vga_apply_light_theme();
+            vga_write_string("\n[+] Light theme applied\n\n");
+            // Update config file
+            vfs_write_file("os.conf", "theme=light;user=admin;");
+        } else {
+            vga_write_string("\nUsage: theme dark|light\n\n");
+        }
     }
     else if (strcmp(cmd, "ps") == 0)
     {
