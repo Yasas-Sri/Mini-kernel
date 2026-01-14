@@ -30,7 +30,7 @@ start:
     xor bx, bx              ; Offset 0 (so address is 0x1000:0x0000 = 0x10000)
     
     mov ah, 0x02            ; Read sectors function
-    mov al, 55              ; Read 55 sectors (27.5KB)
+    mov al, 70              ; Read 70 sectors (35KB - enough for 33KB kernel)
     mov ch, 0               ; Cylinder 0
     mov cl, 2               ; Start from sector 2 (sector 1 is boot sector)
     mov dh, 0               ; Head 0

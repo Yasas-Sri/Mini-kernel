@@ -26,7 +26,7 @@ A minimalist x86 kernel with security features and system call interface for edu
   - Inline hook simulation (patches function code)
   - Safe non-executable attacks for testing
 
-### System Call Interface (Phase 3) ⭐ NEW
+### System Call Interface (Phase 3)  NEW
 - **INT 0x80 Handler**: POSIX-like syscall mechanism
 - **5 System Calls**: exit, write, read, getpid, uptime
 - **User/Kernel Separation**: Ring 3 user mode support
@@ -60,7 +60,7 @@ qemu-system-i386 -drive file=MiniKernelSec.bin,format=raw,if=floppy -serial stdi
 - `meminfo` - Display heap statistics
 - `about` - Kernel information
 - `test` - Test memory allocator
-- **`syscall`** - Test system call interface ⭐ NEW
+- **`syscall`** - Test system call interface  NEW
 - **`idtcheck`** - Check IDT integrity
 - **`idtinfo`** - Display all IDT entries
 - **`funccheck`** - Check function integrity (CRC32)
@@ -71,7 +71,7 @@ qemu-system-i386 -drive file=MiniKernelSec.bin,format=raw,if=floppy -serial stdi
 
 ### Testing Workflow
 
-**1. Test system calls:** ⭐ NEW
+**1. Test system calls:**  NEW
 ```
 syscall     # Tests getpid(), uptime(), write()
 ```
