@@ -4,6 +4,7 @@
 #include "memory.h"
 #include "kim.h"
 #include "rootkit.h"
+#include "process.h"
 #include <stdint.h>
 
 #define MAX_INPUT 256
@@ -64,6 +65,9 @@ static void execute_command(const char *cmd)
         vga_write_string("  meminfo   - Display memory information\n");
         vga_write_string("  about     - Show kernel information\n");
         vga_write_string("  test      - Test memory allocator\n");
+        vga_write_string("  syscall   - Test system call interface\n");
+        vga_write_string("  ps        - List all processes\n");
+        vga_write_string("  demo      - Run multitasking demo\n");
         vga_write_string("  idtcheck  - Check IDT integrity\n");
         vga_write_string("  idtinfo   - Display IDT information\n");
         vga_write_string("  funccheck - Check function integrity (CRC32)\n");
@@ -111,6 +115,113 @@ static void execute_command(const char *cmd)
         vga_write_string("[+] All memory freed\n");
         vga_write_string("[+] Memory allocator test complete!\n\n");
     }
+    else if (strcmp(cmd, "syscall") == 0)
+    {
+        vga_write_string("\n[*] Testing system call interface...\n\n");
+        
+        // Test SYS_GETPID
+        int pid;
+        __asm__ volatile(
+            "mov $3, %%eax\n"      // SYS_GETPID
+            "int $0x80\n"
+            "mov %%eax, %0"
+            : "=r"(pid)
+            :
+            : "eax"
+        );
+        vga_write_string("[SYSCALL TEST] getpid() returned: ");
+        char pid_str[12];
+        int i = 0;
+        if (pid == 0) {
+            pid_str[i++] = '0';
+        } else {
+            char temp[12];
+            int j = 0;
+            int num = pid;
+            while (num > 0) {
+                temp[j++] = '0' + (num % 10);
+                num /= 10;
+            }
+            while (j > 0) {
+                pid_str[i++] = temp[--j];
+            }
+        }
+        pid_str[i] = '\0';
+        vga_write_string(pid_str);
+        vga_write_string("\n");
+        
+        // Test SYS_UPTIME
+        int uptime;
+        __asm__ volatile(
+            "mov $4, %%eax\n"      // SYS_UPTIME
+            "int $0x80\n"
+            "mov %%eax, %0"
+            : "=r"(uptime)
+            :
+            : "eax"
+        );
+        vga_write_string("[SYSCALL TEST] uptime() returned: ");
+        i = 0;
+        if (uptime == 0) {
+            pid_str[i++] = '0';
+        } else {
+            char temp[12];
+            int j = 0;
+            int num = uptime;
+            while (num > 0) {
+                temp[j++] = '0' + (num % 10);
+                num /= 10;
+            }
+            while (j > 0) {
+                pid_str[i++] = temp[--j];
+            }
+        }
+        pid_str[i] = '\0';
+        vga_write_string(pid_str);
+        vga_write_string(" ticks\n");
+        
+        // Test SYS_WRITE
+        const char *test_msg = "Hello from syscall!\n";
+        int written;
+        __asm__ volatile(
+            "mov $1, %%eax\n"      // SYS_WRITE
+            "mov $1, %%ebx\n"      // fd = stdout
+            "mov %1, %%ecx\n"      // buffer
+            "mov $20, %%edx\n"     // count
+            "int $0x80\n"
+            "mov %%eax, %0"
+            : "=r"(written)
+            : "r"(test_msg)
+            : "eax", "ebx", "ecx", "edx"
+        );
+        vga_write_string("[SYSCALL TEST] write(1, \"Hello from syscall!\\n\", 20) returned: ");
+        i = 0;
+        if (written == 0) {
+            pid_str[i++] = '0';
+        } else {
+            char temp[12];
+            int j = 0;
+            int num = written;
+            while (num > 0) {
+                temp[j++] = '0' + (num % 10);
+                num /= 10;
+            }
+            while (j > 0) {
+                pid_str[i++] = temp[--j];
+            }
+        }
+        pid_str[i] = '\0';
+        vga_write_string(pid_str);
+        vga_write_string("\n");
+        
+        // Test SYS_EXIT (just show it, don't actually call or kernel will halt)
+        vga_write_string("[SYSCALL TEST] exit(0) - skipped (would terminate kernel)\n");
+        
+        vga_write_string("\n");
+        vga_set_color(VGA_COLOR_LIGHT_GREEN, VGA_COLOR_BLACK);
+        vga_write_string("[+] System call tests complete!\n\n");
+        vga_set_color(VGA_COLOR_LIGHT_GREY, VGA_COLOR_BLACK);
+    }
     else if (strcmp(cmd, "idtcheck") == 0)
     {
         kim_check_idt();
@@ -138,6 +249,38 @@ static void execute_command(const char *cmd)
     else if (strcmp(cmd, "unpatch") == 0)
     {
         rootkit_unpatch_function();
+    }
+    else if (strcmp(cmd, "ps") == 0)
+    {
+        process_list_all();
+    }
+    else if (strcmp(cmd, "demo") == 0)
+    {
+        vga_write_string("\n[*] Starting multitasking demo...\n");
+        vga_write_string("[*] Creating 3 processes that will run concurrently\n\n");
+        
+        // Create demo processes
+        extern void demo_process_a();
+        extern void demo_process_b();
+        extern void demo_process_c();
+        
+        process_t *proc_a = process_create("Process-A", demo_process_a, 0);
+        process_t *proc_b = process_create("Process-B", demo_process_b, 0);
+        process_t *proc_c = process_create("Process-C", demo_process_c, 0);
+        
+        if (proc_a && proc_b && proc_c) {
+            vga_set_color(VGA_COLOR_LIGHT_GREEN, VGA_COLOR_BLACK);
+            vga_write_string("[+] Created 3 processes\n");
+            vga_write_string("[+] Starting process execution...\n\n");
+            vga_set_color(VGA_COLOR_LIGHT_GREY, VGA_COLOR_BLACK);
+            
+            // Start running the processes (this never returns)
+            run_processes();
+        } else {
+            vga_set_color(VGA_COLOR_LIGHT_RED, VGA_COLOR_BLACK);
+            vga_write_string("[!] Failed to create all processes\n\n");
+            vga_set_color(VGA_COLOR_LIGHT_GREY, VGA_COLOR_BLACK);
+        }
     }
     else if (strlen(cmd) > 0)
     {

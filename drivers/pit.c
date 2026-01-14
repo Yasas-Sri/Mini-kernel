@@ -1,7 +1,9 @@
 #include "pit.h"
 #include "vga.h"
+#include "../kernel/process.h"
 
-static volatile uint32_t timer_ticks = 0;
+// Global timer ticks counter (accessible from other modules)
+volatile uint32_t timer_ticks = 0;
 
 
 static inline void __outb(uint16_t port, uint8_t value)
@@ -29,10 +31,16 @@ void pit_init(uint32_t frequency)
     }
 }
 
+// PIT interrupt handler
 void pit_handler()
 {
     timer_ticks++;
-  
+    
+    // Only enable scheduler after some time to let kernel stabilize
+    if (timer_ticks > 100) {
+        // Call the scheduler on every timer tick
+        scheduler_schedule();
+    }
 }
 
 uint32_t pit_get_ticks()

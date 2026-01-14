@@ -1,19 +1,19 @@
-# MiniKernel-Sec v0.1
+# MiniKernel-Sec v0.2
 
-A minimalist x86 kernel with security features for educational purposes. This project implements kernel-level integrity monitoring to detect rootkit attacks.
+A minimalist x86 kernel with security features and system call interface for educational purposes. This project implements kernel-level integrity monitoring to detect rootkit attacks and provides a POSIX-like syscall interface.
 
 ## Features
 
 ### Core Kernel (Phase 1)
 - **Bootloader**: Custom NASM bootloader with BIOS disk access
-- **Protected Mode**: 32-bit x86 protected mode with GDT
+- **Protected Mode**: 32-bit x86 protected mode with GDT (Ring 0 + Ring 3 segments)
 - **Interrupt Handling**: Full IDT with 32 CPU exceptions + 16 hardware IRQs
 - **Drivers**:
   - VGA text mode (80x25)
   - Interrupt-driven keyboard with circular buffer
   - Programmable Interval Timer (PIT) at 100Hz
 - **Memory Management**: Heap allocator with kmalloc/kfree
-- **Interactive Shell**: Command-line interface with 12 commands
+- **Interactive Shell**: Command-line interface with 13 commands
 
 ### Security Features (Phase 2)
 - **Kernel Integrity Module (KIM)**:
@@ -25,6 +25,12 @@ A minimalist x86 kernel with security features for educational purposes. This pr
   - IDT hook simulation (modifies interrupt descriptors)
   - Inline hook simulation (patches function code)
   - Safe non-executable attacks for testing
+
+### System Call Interface (Phase 3) ⭐ NEW
+- **INT 0x80 Handler**: POSIX-like syscall mechanism
+- **5 System Calls**: exit, write, read, getpid, uptime
+- **User/Kernel Separation**: Ring 3 user mode support
+- **Syscall Table**: Extensible dispatcher architecture
 
 ## Building
 
@@ -54,6 +60,7 @@ qemu-system-i386 -drive file=MiniKernelSec.bin,format=raw,if=floppy -serial stdi
 - `meminfo` - Display heap statistics
 - `about` - Kernel information
 - `test` - Test memory allocator
+- **`syscall`** - Test system call interface ⭐ NEW
 - **`idtcheck`** - Check IDT integrity
 - **`idtinfo`** - Display all IDT entries
 - **`funccheck`** - Check function integrity (CRC32)
@@ -64,13 +71,18 @@ qemu-system-i386 -drive file=MiniKernelSec.bin,format=raw,if=floppy -serial stdi
 
 ### Testing Workflow
 
-**1. Verify baseline security:**
+**1. Test system calls:** ⭐ NEW
+```
+syscall     # Tests getpid(), uptime(), write()
+```
+
+**2. Verify baseline security:**
 ```
 idtcheck    # Should pass
 funccheck   # Should pass
 ```
 
-**2. Test IDT attack detection:**
+**3. Test IDT attack detection:**
 ```
 attack      # Hooks IRQ7 with fake address
 idtcheck    # Detects modification (FAILED)
@@ -78,7 +90,7 @@ unhook      # Restores original handler
 idtcheck    # Verification passes again
 ```
 
-**3. Test inline hook detection:**
+**4. Test inline hook detection:**
 ```
 patch       # Modifies shell_init() code
 funccheck   # Detects CRC32 mismatch (FAILED)
@@ -86,7 +98,7 @@ unpatch     # Restores original bytes
 funccheck   # Verification passes again
 ```
 
-See [TESTING.md](TESTING.md) for comprehensive test scenarios.
+See [TESTING.md](TESTING.md) for comprehensive test scenarios and [SYSCALL_IMPLEMENTATION.md](SYSCALL_IMPLEMENTATION.md) for syscall details.
 
 ## Architecture
 

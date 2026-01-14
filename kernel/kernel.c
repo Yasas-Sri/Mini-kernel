@@ -7,6 +7,8 @@
 #include "memory.h"
 #include "shell.h"
 #include "kim.h"
+#include "syscall.h"
+#include "process.h"
 
 void kernel_main()
 {
@@ -40,6 +42,16 @@ void kernel_main()
     irq_install();
     vga_set_color(VGA_COLOR_LIGHT_GREEN, VGA_COLOR_BLACK);
     vga_write_string("[+] Hardware interrupt handlers installed\n\n");
+
+    // Initialize system calls
+    vga_set_color(VGA_COLOR_LIGHT_GREY, VGA_COLOR_BLACK);
+    syscall_init();
+    vga_write_string("\n");
+
+    // Initialize process management
+    vga_set_color(VGA_COLOR_LIGHT_GREY, VGA_COLOR_BLACK);
+    process_init();
+    vga_write_string("\n");
 
     
     vga_set_color(VGA_COLOR_LIGHT_GREY, VGA_COLOR_BLACK);
