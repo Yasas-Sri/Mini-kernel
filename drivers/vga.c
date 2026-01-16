@@ -1,4 +1,5 @@
 #include "vga.h"
+#include "serial.h"
 
 static uint16_t *vga_buffer = (uint16_t *)VGA_MEMORY;
 static uint8_t vga_cursor_x = 0;
@@ -65,6 +66,9 @@ void vga_scroll()
 
 void vga_putchar(char c)
 {
+    // Also send to serial port
+    serial_putchar(c);
+    
     if (c == '\n')
     {
         vga_cursor_x = 0;

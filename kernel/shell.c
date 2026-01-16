@@ -10,6 +10,9 @@
 #include "cpu_info.h"
 #include "pci.h"
 #include "rootkit_detect.h"
+#include "prompt.h"
+#include "ui_widgets.h"
+#include "pager.h"
 #include <stdint.h>
 
 #define MAX_INPUT 256
@@ -58,53 +61,82 @@ void shell_init()
 {
     vga_write_string("\n");
     vga_set_color(VGA_COLOR_LIGHT_CYAN, VGA_COLOR_BLACK);
-    vga_write_string("   MiniKernel-Sec Shell v0.1\n");
+    vga_write_string("   MiniKernel-Sec Shell v1.0\n");
     vga_set_color(VGA_COLOR_LIGHT_GREY, VGA_COLOR_BLACK);
     vga_write_string("Type 'help' for available commands\n\n");
 }
 
 static void print_prompt()
 {
-    // Get current theme colors
-    uint8_t fg, bg;
-    extern void vga_get_theme_colors(uint8_t *fg, uint8_t *bg);
-    vga_get_theme_colors(&fg, &bg);
-    
-    // Use green for prompt, but keep current background
-    vga_set_color(VGA_COLOR_LIGHT_GREEN, bg);
-    vga_write_string("kernel> ");
-    vga_set_color(fg, bg);
+    prompt_print();
 }
 
 static void execute_command(const char *cmd)
 {
     if (strcmp(cmd, "help") == 0)
     {
-        vga_write_string("\nAvailable commands:\n");
-        vga_write_string("  help      - Show this help message\n");
-        vga_write_string("  clear     - Clear the screen\n");
+        uint8_t fg, bg;
+        extern void vga_get_theme_colors(uint8_t *fg, uint8_t *bg);
+        vga_get_theme_colors(&fg, &bg);
+        
+        vga_write_string("\n");
+        ui_separator('=');
+        vga_set_color(VGA_COLOR_LIGHT_CYAN, bg);
+        vga_write_string("                   MINIKERNEL-SEC COMMAND REFERENCE\n");
+        ui_separator('=');
+        vga_write_string("\n");
+        
+        vga_set_color(VGA_COLOR_LIGHT_CYAN, bg);
+        vga_write_string("SYSTEM INFORMATION:\n");
+        vga_set_color(fg, bg);
         vga_write_string("  sysinfo   - Display system and CPU information\n");
         vga_write_string("  pci       - Scan and display PCI devices\n");
         vga_write_string("  meminfo   - Display memory information\n");
-        vga_write_string("  about     - Show kernel information\n");
-        vga_write_string("  test      - Test memory allocator\n");
-        vga_write_string("  syscall   - Test system call interface\n");
+        vga_write_string("  about     - Show kernel information\n\n");
+        
+        vga_set_color(VGA_COLOR_LIGHT_GREEN, bg);
+        vga_write_string("PROCESS MANAGEMENT:\n");
+        vga_set_color(fg, bg);
         vga_write_string("  ps        - List all processes\n");
-        vga_write_string("  demo      - Run multitasking demo\n");
+        vga_write_string("  demo      - Run multitasking demo\n\n");
+        
+        vga_set_color(VGA_COLOR_LIGHT_MAGENTA, bg);
+        vga_write_string("FILE SYSTEM:\n");
+        vga_set_color(fg, bg);
         vga_write_string("  ls        - List files in RAM disk\n");
         vga_write_string("  cat       - Read and display a file\n");
+        vga_write_string("  more      - View file with pagination (SPACE/Q)\n");
         vga_write_string("  write     - Write to a file\n");
         vga_write_string("  touch     - Create a new file\n");
-        vga_write_string("  rm        - Delete a file\n");
-        vga_write_string("  theme     - Set theme (dark/light)\n");
+        vga_write_string("  rm        - Delete a file\n\n");
+        
+        vga_set_color(VGA_COLOR_LIGHT_RED, bg);
+        vga_write_string("SECURITY:\n");
+        vga_set_color(fg, bg);
+        vga_write_string("  detect    - Run full rootkit detection scan\n");
         vga_write_string("  idtcheck  - Check IDT integrity\n");
         vga_write_string("  idtinfo   - Display IDT information\n");
         vga_write_string("  funccheck - Check function integrity (CRC32)\n");
-        vga_write_string("  detect    - Run full rootkit detection scan\n");
         vga_write_string("  attack    - Simulate rootkit IDT hook attack\n");
         vga_write_string("  unhook    - Remove rootkit IDT hook\n");
         vga_write_string("  patch     - Simulate inline hook (function patching)\n");
-        vga_write_string("  unpatch   - Remove inline hook\n");
+        vga_write_string("  unpatch   - Remove inline hook\n\n");
+        
+        vga_set_color(VGA_COLOR_YELLOW, bg);
+        vga_write_string("INTERFACE:\n");
+        vga_set_color(fg, bg);
+        vga_write_string("  theme     - Set theme (dark/light)\n");
+        vga_write_string("  prompt    - Change prompt style (0-3)\n");
+        vga_write_string("  clear     - Clear the screen\n");
+        vga_write_string("  help      - Show this help message\n\n");
+        
+        vga_set_color(VGA_COLOR_DARK_GREY, bg);
+        vga_write_string("TESTING:\n");
+        vga_set_color(fg, bg);
+        vga_write_string("  test      - Test memory allocator\n");
+        vga_write_string("  syscall   - Test system call interface\n\n");
+        
+        ui_separator('-');
         vga_write_string("\n");
     }
     else if (strcmp(cmd, "clear") == 0)
@@ -319,6 +351,25 @@ static void execute_command(const char *cmd)
             vga_set_color(VGA_COLOR_LIGHT_GREY, VGA_COLOR_BLACK);
         }
     }
+    else if (strncmp(cmd, "more ", 5) == 0)
+    {
+        const char *filename = cmd + 5;
+        char buffer[1024];
+        int bytes = vfs_read_file(filename, buffer, 1023);
+        if (bytes > 0) {
+            buffer[bytes] = '\0';
+            vga_write_string("\nFile: ");
+            vga_write_string(filename);
+            vga_write_string("\n\n");
+            pager_display(buffer);
+        } else {
+            vga_set_color(VGA_COLOR_LIGHT_RED, VGA_COLOR_BLACK);
+            vga_write_string("\n[!] File not found: ");
+            vga_write_string(filename);
+            vga_write_string("\n\n");
+            vga_set_color(VGA_COLOR_LIGHT_GREY, VGA_COLOR_BLACK);
+        }
+    }
     else if (strncmp(cmd, "write ", 6) == 0)
     {
         // Parse: echo filename data (data can have spaces)
@@ -397,17 +448,41 @@ static void execute_command(const char *cmd)
         const char *theme = cmd + 6;
         if (strcmp(theme, "dark") == 0) {
             vga_apply_dark_theme();
-            vga_write_string("\n[+] Dark theme applied\n\n");
+            ui_status_success("Dark theme applied");
+            vga_write_string("\n");
             // Update config file
             vfs_write_file("os.conf", "theme=dark;user=admin;");
         } else if (strcmp(theme, "light") == 0) {
             vga_apply_light_theme();
-            vga_write_string("\n[+] Light theme applied\n\n");
+            ui_status_success("Light theme applied");
+            vga_write_string("\n");
             // Update config file
             vfs_write_file("os.conf", "theme=light;user=admin;");
         } else {
-            vga_write_string("\nUsage: theme dark|light\n\n");
+            ui_status_error("Usage: theme dark|light");
+            vga_write_string("\n");
         }
+    }
+    else if (strncmp(cmd, "prompt ", 7) == 0)
+    {
+        const char *style_str = cmd + 7;
+        if (strcmp(style_str, "0") == 0) {
+            prompt_set_style(PROMPT_STYLE_SIMPLE);
+            ui_status_success("Prompt style: Simple (>)");
+        } else if (strcmp(style_str, "1") == 0) {
+            prompt_set_style(PROMPT_STYLE_COLORFUL);
+            ui_status_success("Prompt style: Colorful ([user@host path]#)");
+        } else if (strcmp(style_str, "2") == 0) {
+            prompt_set_style(PROMPT_STYLE_MINIMAL);
+            ui_status_success("Prompt style: Minimal (path $)");
+        } else if (strcmp(style_str, "3") == 0) {
+            prompt_set_style(PROMPT_STYLE_HACKER);
+            ui_status_success("Prompt style: Hacker (>>> [SYSTEM READY])");
+        } else {
+            ui_status_error("Usage: prompt 0|1|2|3");
+            vga_write_string("  0 = Simple, 1 = Colorful, 2 = Minimal, 3 = Hacker\n");
+        }
+        vga_write_string("\n");
     }
     else if (strcmp(cmd, "ps") == 0)
     {
